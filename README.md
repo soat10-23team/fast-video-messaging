@@ -56,7 +56,7 @@ O **gateway** expõe os endpoints REST para o cliente (frontend ou outro consumi
 
 ## 🔹 2. Contrato de Mensageria – Gateway ↔ Worker
 
-A comunicação assíncrona ocorre via **RabbitMQ** (fila: `video_processing`).
+A comunicação assíncrona ocorre via **RabbitMQ** (fila: `processar_arquivos`).
 O **gateway** publica mensagens e o **worker** consome.
 
 ### Estrutura da Mensagem (JSON):
@@ -64,10 +64,24 @@ O **gateway** publica mensagens e o **worker** consome.
 ```json
 {
   "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "PENDENTE", 
+  "outputName": null
+}
+```
+```json
+{
+  "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "CONCLUIDO", 
   "outputName": "1735689963_frames.zip"
 }
 ```
-
+```json
+{
+  "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "FALHA", 
+  "outputName": null
+}
+```
 * **Campos:**
 
   * `videoPath` *(string, obrigatório)* → caminho do arquivo enviado no volume compartilhado
