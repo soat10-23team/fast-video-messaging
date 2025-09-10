@@ -1,28 +1,29 @@
-version: "3.9"
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: fast-video-rabbitmq
-    ports:
-      - "5672:5672"   # Porta para apps se conectarem
-      - "15672:15672" # Porta do painel de administração
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
-    networks:
-      - fastnet
   fast-video-messaging:
     build: .
     container_name: fast-video-messaging
-    depends_on:
-      - rabbitmq
-    environment:
-      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
-    networks:
-      - fastnet
+    command: sh -c "ts-node setup-sqs.ts && npm run dev"
     volumes:
       - .:/app
-    command: npm run start:consumer # ou start:producer para testar envio
-networks:
-  fastnet:
-    driver: bridge
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_QUEUE_NAME: fast-video-queue
+      SQS_ENDPOINT: http://localstack:4566
+    depends_on:
+      - localstack
+
+  localstack:
+    image: localstack/localstack:3.2
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+    volumes:
+      - ./localstack:/var/lib/localstack
