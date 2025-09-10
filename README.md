@@ -55,14 +55,27 @@ npm test
 ## 🔗 Fila e Mensagem
 
 Queue: video_processing
+### Estrutura da Mensagem (JSON):
 
-Formato da mensagem (JSON):
-```
+```json
 {
-  "videoId": "123",
-  "userId": "user1",
-  "filePath": "/uploads/test.mp4",
-  "requestedAt": "2025-09-09T16:30:00.000Z"
+  "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "PENDENTE", 
+  "outputName": null
+}
+```
+```json
+{
+  "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "CONCLUIDO", 
+  "outputName": "1735689963_frames.zip"
+}
+```
+```json
+{
+  "videoPath": "/app/uploads/abcd1234.mp4",
+  "status": "FALHA", 
+  "outputName": null
 }
 ```
 
@@ -95,6 +108,7 @@ O **gateway** expõe os endpoints REST para o cliente (frontend ou outro consumi
 ```json
 {
   "message": "Vídeo recebido e enviado para processamento.",
+  "status": "CONCLUIDO", 
   "file": "1735689963_frames.zip"
 }
 ```

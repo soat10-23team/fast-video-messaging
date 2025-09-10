@@ -5,9 +5,9 @@ async function main() {
 
   // Exemplo de mensagens simulando vídeos
   const videos = [
-    { videoPath: "uploads/video1.mp4", userId: 101 },
-    { videoPath: "uploads/video2.mp4", userId: 102 },
-    { videoPath: "uploads/video3.mp4", userId: 103 },
+    { videoPath: "/app/uploads/abcd1234.mp4", status: "PENDENTE", outputName: null, userId: 101 },
+    { videoPath: "/app/uploads/abcd1234.mp4", status: "CONCLUIDO", outputName:"1735689963_frames.zip", userId: 101 },
+    { videoPath: "/app/uploads/abcd1234.mp4", status: "FALHA", outputName:null, userId: 101 }
   ];
 
   for (const video of videos) {
