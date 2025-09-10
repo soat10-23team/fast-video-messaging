@@ -108,6 +108,7 @@ O **gateway** expõe os endpoints REST para o cliente (frontend ou outro consumi
 ```json
 {
   "message": "Vídeo recebido e enviado para processamento.",
+  "status": "CONCLUIDO", 
   "file": "1735689963_frames.zip"
 }
 ```

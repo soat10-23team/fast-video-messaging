@@ -1,6 +1,7 @@
 import amqp, { Channel } from "amqplib";
 const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
 
+
 let channel: Channel;
 const queue = "processar_arquivos";
 
