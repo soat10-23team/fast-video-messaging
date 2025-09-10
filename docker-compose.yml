@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: fast-video-rabbitmq
+    ports:
+      - "5672:5672"   # Porta para apps se conectarem
+      - "15672:15672" # Porta do painel de administração
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      - fastnet
+  fast-video-messaging:
+    build: .
+    container_name: fast-video-messaging
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    networks:
+      - fastnet
+    volumes:
+      - .:/app
+    command: npm run start:consumer # ou start:producer para testar envio
+networks:
+  fastnet:
+    driver: bridge
