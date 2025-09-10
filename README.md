@@ -1,5 +1,70 @@
-# fast-video-messaging
-Lib compartilhada para conexão com RabbitMQ (npm package privado ou git submodule)
+# 📦 fast-video-messaging
+
+Serviço de mensageria para o sistema **Fast Video Processing**.  
+Gerencia o envio e consumo de mensagens de processamento de vídeo via RabbitMQ.
+
+---
+
+## 🚀 Tecnologias
+- Node.js ^22.10.5
+- TypeScript
+- RabbitMQ
+- Jest (testes)
+- Docker / Docker Compose
+
+---
+
+## 📂 Estrutura
+
+fast-video-messaging/
+├── src/
+│   ├── messaging.ts      # Conexão RabbitMQ + helpers
+│   ├── producer.ts       # Producer fake para testes manuais
+│   ├── consumer.ts       # Consumer fake para testes manuais
+│   └── index.ts          # (opcional) ponto de entrada
+├── tests/
+│   └── messaging.spec.ts # Testes automatizados com Jest
+├── docker-compose.yml
+├── package.json
+├── tsconfig.json
+└── README.md
+
+
+---
+
+## ▶️ Como Rodar
+
+### 1. Subir RabbitMQ
+```bash
+docker compose up -d
+Acesse o painel: http://localhost:15672
+```
+
+### 2. Instalar dependências
+npm install
+
+### 3. Rodar producer
+npm run start:producer
+
+### 4. Rodar consumer
+npm run start:consumer
+
+### 5. Rodar testes
+npm test
+
+## 🔗 Fila e Mensagem
+
+Queue: video_processing
+
+Formato da mensagem (JSON):
+```
+{
+  "videoId": "123",
+  "userId": "user1",
+  "filePath": "/uploads/test.mp4",
+  "requestedAt": "2025-09-09T16:30:00.000Z"
+}
+```
 
 **documentação dos contratos entre os microsserviços**.
 
