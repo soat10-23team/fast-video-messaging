@@ -1,6 +1,6 @@
 import { SQSClient, CreateQueueCommand } from "@aws-sdk/client-sqs";
 
-const QUEUE_NAME = process.env.SQS_QUEUE_NAME || "fast-video-queue";
+const QUEUE_NAME = process.env.SQS_QUEUE_NAME || "video_processing";
 const REGION = process.env.AWS_REGION || "us-east-1";
 const ENDPOINT = process.env.SQS_ENDPOINT; // usado para LocalStack
 

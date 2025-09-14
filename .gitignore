@@ -34,3 +34,9 @@ Thumbs.db
 # Tests & Coverage
 coverage/
 *.lcov
+
+# LocalStack
+.localstack/
+localstack/
+*.pem
+*.key
