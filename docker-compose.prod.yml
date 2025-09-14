@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  fast-video-messaging:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - SQS_QUEUE_URL=${SQS_QUEUE_URL}
+      - PORT=3000
+    restart: always
