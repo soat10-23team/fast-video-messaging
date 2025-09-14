@@ -5,13 +5,13 @@ const app = express();
 app.use(express.json());
 
 const client = new SQSClient({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
+  region: "us-east-1",
+  endpoint: process.env.AWS_SQS_ENDPOINT || "http://localhost:4566",
+  credentials: { accessKeyId: "test", secretAccessKey: "test" },
 });
-const QUEUE_URL = process.env.SQS_QUEUE_URL!;
+
+const QUEUE_URL =
+  process.env.SQS_QUEUE_URL || "http://localhost:4566/000000000000/video_processing";
 
 // POST -> envia mensagem para fila
 app.post("/messages", async (req, res) => {

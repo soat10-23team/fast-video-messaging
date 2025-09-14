@@ -1,15 +1,14 @@
 # 📦 fast-video-messaging
 
 Serviço de mensageria para o sistema **Fast Video Processing**.  
-Gerencia o envio e consumo de mensagens de processamento de vídeo via RabbitMQ.
-
+Gerencia o envio e consumo de mensagens de processamento de vídeo via AWS SQS (ou LocalStack para testes locais).
 ---
 
 ## 🚀 Tecnologias
 - Node.js ^22.10.5
 - TypeScript
-- RabbitMQ
-- Jest (testes)
+- AWS SQS / LocalStack
+- Jest (testes unitários)
 - Docker / Docker Compose
 
 ---
@@ -17,13 +16,14 @@ Gerencia o envio e consumo de mensagens de processamento de vídeo via RabbitMQ.
 ## 📂 Estrutura
 
 fast-video-messaging/
-├── src/
-│   ├── messaging.ts      # Conexão RabbitMQ + helpers
-│   ├── producer.ts       # Producer fake para testes manuais
-│   ├── consumer.ts       # Consumer fake para testes manuais
-│   └── index.ts          # (opcional) ponto de entrada
-├── tests/
-│   └── messaging.spec.ts # Testes automatizados com Jest
+├── src/                # Código-fonte TypeScript
+│   ├── api.ts          # API HTTP para envio/consulta de mensagens
+│   ├── send.ts         # Script para enviar mensagem manualmente
+│   ├── consumer.ts     # Script para consumir mensagem manualmente
+│   └── messaging.ts    # Conexão com SQS + helpers
+├── dist/               # Código compilado JS (após tsc)
+├── tests/              # Testes unitários Jest
+│   └── messaging.spec.ts
 ├── docker-compose.yml
 ├── package.json
 ├── tsconfig.json
@@ -33,29 +33,77 @@ fast-video-messaging/
 ---
 
 ## ▶️ Como Rodar
+## 1.0docker compose up -d localstack
 
-### 1. Subir RabbitMQ
+### 1.1. LocalStack / Ambiente Local
+
 ```bash
-docker compose up -d
-Acesse o painel: http://localhost:15672
+docker compose up -d localstack
+```
+Painel de serviços: http://localhost:4566
+
+### 1.2. Criar a fila no LocalStack:
+
+```bash
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name video_processing --region us-east-1
 ```
 
-### 2. Instalar dependências
+### 1.3 Instalar dependências:
+```bash
 npm install
-
-### 3. Rodar producer
-npm run start:producer
-
-### 4. Rodar consumer
-npm run start:consumer
-
-### 5. Rodar testes
+```
+### 1.4 Rodar API:
+```bash
+npm run api
+```
+### 1.5 Enviar mensagem de teste:
+```bash
+npm run send
+```
+### 1.6 Consumir mensagem:
+```bash
+npm run consume
+```
+### 1.7 Rodar testes unitários:
+```bash
 npm test
+```
+
+
+### 2. Produção AWS
+### 2.1 Configurar credenciais:
+
+```bash
+aws configure
+```
+
+### 2.2 Definir variáveis de ambiente:
+export AWS_REGION=us-east-1
+export SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/<account-id>/video_processing
+
+### 2.3 Subir API:
+```bash
+npm run api
+```
+
+
 
 ## 🔗 Fila e Mensagem
 
-Queue: video_processing
 ### Estrutura da Mensagem (JSON):
+
+Queue: video_processing
+
+| Campo      | Tipo   | Obrigatório | Descrição                                  |
+| ---------- | ------ | ----------- | ------------------------------------------ |
+| videoPath  | string | sim         | Caminho do vídeo (no volume compartilhado) |
+| status     | string | sim         | PENDENTE, CONCLUIDO, FALHA                 |
+| outputName | string | não         | Nome do ZIP gerado pelo worker             |
+
+
+
+Exemplos:
+
 
 ```json
 {
@@ -78,6 +126,11 @@ Queue: video_processing
   "outputName": null
 }
 ```
+
+
+** ⚠️ Nota: devido às limitações do SQS, não é possível consultar uma mensagem específica por ID.
+GET /messages retorna apenas as mensagens visíveis na fila no momento. **
+
 
 **documentação dos contratos entre os microsserviços**.
 
@@ -93,114 +146,69 @@ Como temos **3 serviços** (`gateway`, `worker`, `messaging`), os contratos fica
 
 ## 🔹 1. API HTTP – Gateway
 
-O **gateway** expõe os endpoints REST para o cliente (frontend ou outro consumidor).
+Endpoints REST para enviar ou consultar mensagens.
 
-### `POST /upload`
+### `POST /messages`
 
-**Descrição:** Recebe um vídeo para processamento.
+**Descrição:** Envia uma mensagem de processamento de vídeo
 
-* **Request** (Multipart/form-data):
-
-  * `video` → arquivo de vídeo (ex.: `.mp4`, `.mov`)
-
-* **Response** (JSON):
+* **Request** Body (JSON):
 
 ```json
 {
-  "message": "Vídeo recebido e enviado para processamento.",
-  "status": "CONCLUIDO", 
-  "file": "1735689963_frames.zip"
+  "videoPath": "/app/uploads/video123.mp4",
+  "status": "PENDENTE",
+  "outputName": null
+}
+```
+* **Response** 201 Created
+
+```json
+{
+  "messageId": "abc123"
 }
 ```
 
 * **Erros:**
 
   * `400 Bad Request` → Nenhum arquivo enviado
-  * `500 Internal Server Error` → Falha ao publicar mensagem no RabbitMQ
+  * `500 Internal Server Error` → Erro ao enviar mensagem
 
----
+### `GET /messages`
 
-### `GET /download/{file}`
+**Descrição:** Lista mensagens visíveis na fila
 
-**Descrição:** Faz o download do ZIP gerado pelo worker.
+  * `500 Internal Server Error` → Erro ao listar mensagens
 
-* **Path param:** `file` → nome do arquivo zip (ex.: `1735689963_frames.zip`)
 
-* **Response:**
 
-  * `200 OK` → Retorna o arquivo `.zip` em `application/zip`
-  * `404 Not Found` → Arquivo ainda não processado ou inexistente
+### `DELETE /messages`
 
----
+**Descrição:** Consome a primeira mensagem visível da fila e deleta
 
-## 🔹 2. Contrato de Mensageria – Gateway ↔ Worker
-
-A comunicação assíncrona ocorre via **RabbitMQ** (fila: `processar_arquivos`).
-O **gateway** publica mensagens e o **worker** consome.
-
-### Estrutura da Mensagem (JSON):
+* **Response** 200 OK
 
 ```json
 {
-  "videoPath": "/app/uploads/abcd1234.mp4",
-  "status": "PENDENTE", 
-  "outputName": null
+  "status": "Mensagem consumida e deletada",
+  "message": { "videoPath": "/app/uploads/video123.mp4", "status": "PENDENTE", "outputName": null }
 }
-```
-```json
-{
-  "videoPath": "/app/uploads/abcd1234.mp4",
-  "status": "CONCLUIDO", 
-  "outputName": "1735689963_frames.zip"
-}
-```
-```json
-{
-  "videoPath": "/app/uploads/abcd1234.mp4",
-  "status": "FALHA", 
-  "outputName": null
-}
-```
-* **Campos:**
 
-  * `videoPath` *(string, obrigatório)* → caminho do arquivo enviado no volume compartilhado
-  * `outputName` *(string, obrigatório)* → nome do zip que será gerado pelo worker
+```
 
-* **Garantias:**
+* **Erros:**
 
-  * Mensagens persistentes (`persistent: true`) → não se perdem em restart do RabbitMQ
-  * Worker confirma (`ack`) apenas após gerar o `.zip` com sucesso
+  * `500 Internal Server Error` → Erro ao listar mensagens
+
+
 
 ---
 
-## 🔹 3. Volumes Compartilhados – Gateway ↔ Worker
+# 🔹 2. Fluxo Resumido
 
-Os serviços não transferem arquivos via rede, apenas metadados.
-Os binários grandes (vídeos, zips) ficam em volumes Docker compartilhados.
-
-### Estrutura de diretórios:
-
-```
-/app/uploads   → vídeos recebidos pelo gateway
-/app/temp      → frames extraídos pelo worker
-/app/outputs   → arquivos zip prontos para download
-```
-
-* **Workflow de arquivos:**
-
-  1. `gateway` salva vídeo em `/app/uploads/...`
-  2. `gateway` envia mensagem `{ videoPath, outputName }`
-  3. `worker` lê o vídeo, gera frames em `/app/temp/`
-  4. `worker` compacta frames em `/app/outputs/outputName.zip`
-  5. `gateway` libera o download em `/download/{outputName}`
-
----
-
-# 🔹 Fluxo Resumido
-
-1. Cliente faz `POST /upload` (envia vídeo).
-2. Gateway salva o vídeo em `/uploads` e publica mensagem no RabbitMQ.
-3. Worker consome a mensagem, processa com `ffmpeg`, gera frames, cria `.zip` em `/outputs`.
-4. Cliente faz `GET /download/{file}` para baixar o resultado.
+1. Cliente faz `POST /messages` (envia vídeo).
+2. Gateway salva o vídeo em `/uploads` e publica mensagem no AWS SQS (ou LocalStack para testes locais).
+3. Worker consome a mensagem `DELETE /messages` , processa com `ffmpeg`, gera frames, cria `.zip` em `/outputs`.
+4. Cliente faz `GET /messages/{file}` para baixar o resultado.
 
 ---

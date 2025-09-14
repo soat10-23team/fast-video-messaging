@@ -10,8 +10,12 @@
     "setup:sqs": "ts-node setup-sqs.ts",
     "test": "jest --detectOpenHandles --forceExit",
     "dev": "ts-node-dev src/index.ts",
-    "dev:api": "ts-node-dev src/api.ts",
+    "dev:api": "ts-node-dev src/api_local.ts",
+    "startlocal": "node dist/api_local.js",
+    "apilocal": "ts-node src/api_local.ts",
+    "start": "node dist/api.js",
     "api": "ts-node src/api.ts"
+
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.888.0",
