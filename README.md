@@ -178,21 +178,6 @@ Endpoints REST para enviar ou consultar mensagens.
 
 **Descrição:** Lista mensagens visíveis na fila
 
-* **Response** 200 OK
-
-```json
-{
-  "messages": [
-    {
-      "MessageId": "abc123",
-      "Body": "{\"videoPath\":\"/app/uploads/video123.mp4\",\"status\":\"PENDENTE\"}"
-    }
-  ]
-}
-```
-
-* **Erros:**
-
   * `500 Internal Server Error` → Erro ao listar mensagens
 
 
